@@ -5,10 +5,8 @@ const squeezeWhitespace = (s: string) => s.replace(/\s+/g, " ");
 
 test("", t => {
   const table: TableDefinition = {
-    name: "table",
-    columns: [
-      {
-        name: "column1",
+    columns: {
+      column1: {
         type: "int",
         constraints: {
           defaultValue: "1",
@@ -24,7 +22,7 @@ test("", t => {
           }
         }
       }
-    ],
+    },
     constraints: [
       {
         type: "check",
@@ -58,7 +56,7 @@ test("", t => {
       unique ("uniqueColumn1", "uniqueColumn2")
     )
   `;
-  const actual = createTable("schema", table);
+  const actual = createTable("schema", "table", table);
   t.equal(squeezeWhitespace(actual), squeezeWhitespace(expected));
   t.end();
 });

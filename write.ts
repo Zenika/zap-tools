@@ -8,12 +8,14 @@ import {
 
 export type CreateTableOperation = {
   type: "createTable";
+  name: string;
   table: TableDefinition;
 };
 
 export type AddColumnOperation = {
   type: "addColumn";
   table: string;
+  name: string;
   column: ColumnDefinition;
 };
 
@@ -22,9 +24,13 @@ export type Operation = CreateTableOperation | AddColumnOperation;
 export const write = async (
   client: Client,
   schema: string,
-  operations: Operation[]
+  operations: Operation[],
+  options: { drop?: boolean } = {}
 ): Promise<void> => {
   await client.query("begin");
+  if (options.drop) {
+    await client.query(`drop schema "${schema}" cascade`);
+  }
   await client.query(`create schema if not exists "${schema}"`);
   await client.query(`create schema if not exists "dms"`);
   await client.query(
@@ -57,23 +63,23 @@ const applyCreateTable = async (
   schema: string,
   operation: CreateTableOperation
 ): Promise<void> => {
-  const sql = createTable(schema, operation.table);
+  const sql = createTable(schema, operation.name, operation.table);
   await client.query(sql);
   await client.query(
     `insert into "dms"."table_config" ("schema", "table", "config") values ($1, $2, $3)`,
     [
       schema,
-      operation.table.name,
+      operation.name,
       JSON.stringify({ constraints: operation.table.constraints })
     ]
   );
-  for (const column of operation.table.columns) {
+  for (const [columnName, column] of Object.entries(operation.table.columns)) {
     await client.query(
       `insert into "dms"."column_config" ("schema", "table", "column", "config") values ($1, $2, $3, $4)`,
       [
         schema,
-        operation.table.name,
-        column.name,
+        operation.name,
+        columnName,
         JSON.stringify({
           type: column.type,
           constraints: column.constraints
@@ -89,14 +95,19 @@ const applyAddColumn = async (
   schema: string,
   operation: AddColumnOperation
 ): Promise<void> => {
-  const sql = addColumn(schema, operation.table, operation.column);
+  const sql = addColumn(
+    schema,
+    operation.table,
+    operation.name,
+    operation.column
+  );
   await client.query(sql);
   await client.query(
     `insert into "dms"."column_config" ("schema", "table", "column", "config") values ($1, $2, $3, $4)`,
     [
       schema,
       operation.table,
-      operation.column.name,
+      operation.name,
       JSON.stringify({
         type: operation.column.type,
         constraints: operation.column.constraints
