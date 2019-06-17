@@ -7,6 +7,7 @@ import { Table } from "graphql-migrate/src/abstract/Table";
 import { TableColumn } from "graphql-migrate/src/abstract/TableColumn";
 import { write as newWrite, CreateTableOperation } from "./write";
 import { read as newRead, makeDiffable } from "./read";
+import { diff } from "./diff";
 
 const keyBy = <T>(items: T[], key: keyof T) => {
   return Object.fromEntries(items.map(t => [t[key], t]));
@@ -115,23 +116,25 @@ const applyModel = async (model: any) => {
 
   const client = new Client(liveDatabaseConfig.connection);
   await client.connect();
-  const operation: CreateTableOperation = {
-    type: "createTable",
-    name: "lol",
-    table: {
-      columns: {
-        rofl: {
-          type: "int",
-          constraints: {}
-        }
-      },
-      constraints: []
-    }
-  };
-  // await newWrite(client, model.application.name, [operation], { drop: true });
+  // empty right to ensure dms schema is available
+  // dms schema scaffolding should be done separatly
+  await newWrite(client, model.application.name, []);
   const live = await newRead(client, model.application.name);
   const target = makeDiffable(model.model.tables);
-  console.log(live, target);
+  const operations = diff(model.model, live, target);
+  if (operations.length === 0) {
+    console.log(model.application.name, "no operations to apply");
+  }
+  for (const operation of operations) {
+    console.log(
+      model.application.name,
+      operation.type,
+      operation.type === "createTable"
+        ? operation.name
+        : `${operation.table}.${operation.name}`
+    );
+  }
+  await newWrite(client, model.application.name, operations);
   await client.end();
 };
 

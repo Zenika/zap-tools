@@ -29,7 +29,7 @@ export const write = async (
 ): Promise<void> => {
   await client.query("begin");
   if (options.drop) {
-    await client.query(`drop schema "${schema}" cascade`);
+    await client.query(`drop schema if exists "${schema}" cascade`);
   }
   await client.query(`create schema if not exists "${schema}"`);
   await client.query(`create schema if not exists "dms"`);
@@ -39,6 +39,15 @@ export const write = async (
   await client.query(
     `create table if not exists "dms"."column_config" ("schema" text not null, "table" text not null, "column" text not null, "config" json not null, primary key ("schema", "table", "column"))`
   );
+  if (options.drop) {
+    await client.query(`delete from "dms"."table_config" where "schema" = $1`, [
+      schema
+    ]);
+    await client.query(
+      `delete from "dms"."column_config" where "schema" = $1`,
+      [schema]
+    );
+  }
   for (const operation of operations) {
     await applyOperation(client, schema, operation);
   }

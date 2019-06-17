@@ -1,6 +1,6 @@
 export type TableDefinition = {
   columns: { [name: string]: ColumnDefinition };
-  constraints: TableConstraintDefinition[];
+  constraints?: TableConstraintDefinition[];
 };
 
 export type TableConstraintDefinition =
@@ -23,15 +23,15 @@ export type TableConstraintDefinition =
 
 export type ColumnDefinition = {
   type: string;
-  constraints: {
+  constraints?: {
     notNull?: boolean;
     defaultValue?: string;
     generated?: "always" | "by default";
     unique?: boolean;
     primaryKey?: boolean;
     references?: {
-      schema: string;
-      table: string;
+      schema?: string;
+      table?: string;
       column: string;
       match?: ForeignKeyMatchType;
     };
@@ -48,9 +48,13 @@ export const createTable = (
   create table "${schema}"."${name}" (
     ${[
       Object.entries(def.columns)
-        .map(([columnName, column]) => columnDefinition(columnName, column))
+        .map(([columnName, column]) =>
+          columnDefinition(schema, name, columnName, column)
+        )
         .join(",\n"),
-      def.constraints.map(constraintDefinition).join(",\n")
+      (def.constraints || [])
+        .map(constraint => constraintDefinition(schema, name, constraint))
+        .join(",\n")
     ]
       .map(s => s.trim())
       .filter(Boolean)
@@ -66,32 +70,37 @@ export const addColumn = (
 ): string => {
   return `
     alter table "${schema}"."${table}"
-    add column ${columnDefinition(name, def)}
+    add column ${columnDefinition(schema, table, name, def)}
   `;
 };
 
-const columnDefinition = (name: string, def: ColumnDefinition): string => {
-  const notNull = def.constraints.primaryKey ? ["not null"] : [];
-  const defaultValue = def.constraints.defaultValue
-    ? [`default ${def.constraints.defaultValue}`]
+const columnDefinition = (
+  schema: string,
+  table: string,
+  name: string,
+  def: ColumnDefinition
+): string => {
+  const constraints = def.constraints || {};
+  const notNull = constraints.notNull ? ["not null"] : [];
+  const defaultValue = constraints.defaultValue
+    ? [`default ${constraints.defaultValue}`]
     : [];
-  const generated = def.constraints.generated
-    ? [`generated ${def.constraints.generated} as identity`]
+  const generated = constraints.generated
+    ? [`generated ${constraints.generated} as identity`]
     : [];
-  const unique = def.constraints.unique ? ["unique"] : [];
-  const primaryKey = def.constraints.primaryKey ? ["primary key"] : [];
-  const references = def.constraints.references
+  const unique = constraints.unique ? ["unique"] : [];
+  const primaryKey = constraints.primaryKey ? ["primary key"] : [];
+  const references = constraints.references
     ? [
-        `references "${def.constraints.references.schema}"."${
-          def.constraints.references.table
-        }" ("${def.constraints.references.column}") ${
-          def.constraints.references.match
-            ? `match ${def.constraints.references.match}`
+        `references "${constraints.references.schema || schema}"."${constraints
+          .references.table || table}" ("${constraints.references.column}") ${
+          constraints.references.match
+            ? `match ${constraints.references.match}`
             : ""
         }`
       ]
     : [];
-  const constraints = [
+  const sqlConstraints = [
     ...notNull,
     ...defaultValue,
     ...generated,
@@ -99,10 +108,14 @@ const columnDefinition = (name: string, def: ColumnDefinition): string => {
     ...primaryKey,
     ...references
   ];
-  return `"${name}" ${def.type} ${constraints.join(" ")}`;
+  return `"${name}" ${def.type} ${sqlConstraints.join(" ")}`;
 };
 
-const constraintDefinition = (constraint: TableConstraintDefinition) => {
+const constraintDefinition = (
+  schema: string,
+  table: string,
+  constraint: TableConstraintDefinition
+) => {
   switch (constraint.type) {
     case "check":
       return `check (${constraint.expression})`;
@@ -113,9 +126,10 @@ const constraintDefinition = (constraint: TableConstraintDefinition) => {
     case "foreignKey":
       return `foreign key (${columnNameEnumeraton(
         constraint.columns
-      )}) references "${constraint.references.schema}"."${
-        constraint.references.table
-      }" (${columnNameEnumeraton(constraint.references.columns)})${
+      )}) references "${constraint.references.schema || schema}"."${constraint
+        .references.table || table}" (${columnNameEnumeraton(
+        constraint.references.columns
+      )})${
         constraint.references.match
           ? ` match ${constraint.references.match}`
           : ""

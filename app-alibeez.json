@@ -7,12 +7,23 @@
       "users": {
         "columns": {
           "id": {
-            "type": "increments"
+            "type": "integer",
+            "constraints": {
+              "primaryKey": true
+            }
           },
           "name": {
             "type": "text",
             "constraints": {
               "notNull": true
+            }
+          },
+          "manager": {
+            "type": "integer",
+            "constraints": {
+              "references": {
+                "column": "id"
+              }
             }
           }
         }

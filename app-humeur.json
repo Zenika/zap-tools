@@ -7,7 +7,10 @@
       "votes": {
         "columns": {
           "id": {
-            "type": "increments"
+            "type": "integer",
+            "constraints": {
+              "primaryKey": true
+            }
           },
           "value": {
             "type": "integer",

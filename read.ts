@@ -1,10 +1,12 @@
 import { Client } from "pg";
 import { TableDefinition, ColumnDefinition } from "./sql";
 
-type DiffableModel = {
+export type DiffableModel = {
   tables: { [tableName: string]: Pick<TableDefinition, "constraints"> };
   columns: {
-    [columnName: string]: Pick<ColumnDefinition, "type" | "constraints">;
+    [tableName: string]: {
+      [columnName: string]: Pick<ColumnDefinition, "type" | "constraints">;
+    };
   };
 };
 
@@ -19,15 +21,18 @@ export const makeDiffable = (model: {
       ])
     ),
     columns: Object.fromEntries(
-      Object.entries(model).flatMap(([tableName, table]) =>
-        Object.entries(table.columns).map(([columnName, column]) => [
-          `${tableName}.${columnName}`,
-          {
-            type: column.type,
-            constraints: column.constraints || {}
-          }
-        ])
-      )
+      Object.entries(model).map(([tableName, table]) => [
+        tableName,
+        Object.fromEntries(
+          Object.entries(table.columns).map(([columnName, column]) => [
+            columnName,
+            {
+              type: column.type,
+              constraints: column.constraints || {}
+            }
+          ])
+        )
+      ])
     )
   };
 };
@@ -61,23 +66,36 @@ export const read = async (
       from
         (
           select
-            json_object_agg(
-              "table",
-              "config"
+            coalesce(
+              json_object_agg(
+                "table",
+                "config"
+              ),
+              json_build_object()
             ) as "tables"
           from "dms"."table_config"
           where "schema" = $1
         ) as "table_config",
         (
           select
-            json_object_agg(
-              quote_ident("table")
-                || '.'
-                || quote_ident("column"),
-              "config"
+            coalesce(
+              json_object_agg(
+                "table",
+                "columns"
+              ),
+              json_build_object()
             ) as "columns"
-          from "dms"."column_config"
-          where "schema" = $1
+            from (
+              select
+                "table",
+                json_object_agg(
+                  "column",
+                  "config"
+                ) as "columns"
+              from "dms"."column_config"
+              where "schema" = $1
+              group by "table"
+            ) as "table_column_config"
         ) as "column_config";
     `,
     [schema]
