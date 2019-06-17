@@ -44,8 +44,13 @@ type ForeignKeyMatchType = "simple" | "partial" | "full";
 
 export const createTable = (schema: string, table: TableDefinition) => `
   create table "${schema}"."${table.name}" (
-    ${table.columns.map(columnDefinition).join(",\n")},
-    ${table.constraints.map(constraintDefinition).join(",\n")}
+    ${[
+      table.columns.map(columnDefinition).join(",\n"),
+      table.constraints.map(constraintDefinition).join(",\n")
+    ]
+      .map(s => s.trim())
+      .filter(Boolean)
+      .join(",\n")}
   )
 `;
 

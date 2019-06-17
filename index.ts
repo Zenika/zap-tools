@@ -1,9 +1,11 @@
 import { readFileSync } from "fs";
 import { read, write, computeDiff, MigratePlugin } from "graphql-migrate";
 import Knex from "knex";
+import { Client } from "pg";
 import { AbstractDatabase } from "graphql-migrate/src/abstract/AbstractDatabase";
 import { Table } from "graphql-migrate/src/abstract/Table";
 import { TableColumn } from "graphql-migrate/src/abstract/TableColumn";
+import { write as newWrite, CreateTableOperation } from "./write";
 
 const keyBy = <T>(items: T[], key: keyof T) => {
   return Object.fromEntries(items.map(t => [t[key], t]));
@@ -96,19 +98,38 @@ const applyModel = async (model: any) => {
     }
   };
 
-  const modelDatabase = modelToAbstractDatabase(model);
-  const liveDatabase = await read(liveDatabaseConfig, model.application.name);
-  const operations = await computeDiff(liveDatabase, modelDatabase);
-  console.log(operations);
+  // const modelDatabase = modelToAbstractDatabase(model);
+  // const liveDatabase = await read(liveDatabaseConfig, model.application.name);
+  // const operations = await computeDiff(liveDatabase, modelDatabase);
+  // console.log(operations);
 
-  await write(
-    operations,
-    liveDatabaseConfig,
-    model.application.name,
-    /* tablePrefix */ undefined,
-    /* columnPrefix */ undefined,
-    [new EnsureSchemaExistsPlugin(model.application.name)]
-  );
+  // await write(
+  //   operations,
+  //   liveDatabaseConfig,
+  //   model.application.name,
+  //   /* tablePrefix */ undefined,
+  //   /* columnPrefix */ undefined,
+  //   [new EnsureSchemaExistsPlugin(model.application.name)]
+  // );
+
+  const client = new Client(liveDatabaseConfig.connection);
+  await client.connect();
+  const operation: CreateTableOperation = {
+    type: "createTable",
+    table: {
+      name: "lol",
+      columns: [
+        {
+          name: "rofl",
+          type: "int",
+          constraints: {}
+        }
+      ],
+      constraints: []
+    }
+  };
+  await newWrite(client, model.application.name, [operation]);
+  await client.end();
 };
 
 const main = async () => {
