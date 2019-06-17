@@ -1,0 +1,22 @@
+{
+  "application": {
+    "name": "alibeez"
+  },
+  "model": {
+    "tables": {
+      "users": {
+        "columns": {
+          "id": {
+            "type": "increments"
+          },
+          "name": {
+            "type": "text",
+            "constraints": {
+              "notNull": true
+            }
+          }
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,33 @@
+{
+  "application": {
+    "name": "humeur"
+  },
+  "model": {
+    "tables": {
+      "votes": {
+        "columns": {
+          "id": {
+            "type": "increments"
+          },
+          "value": {
+            "type": "integer",
+            "constraints": {
+              "notNull": true
+            }
+          },
+          "user_id": {
+            "type": "integer",
+            "constraints": {
+              "notNull": true,
+              "references": {
+                "schema": "alibeez",
+                "table": "users",
+                "column": "id"
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}
