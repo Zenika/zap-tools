@@ -1,7 +1,7 @@
 import { readFileSync } from "fs";
 import { Client } from "pg";
-import { write as newWrite } from "./write";
-import { read as newRead } from "./read";
+import { write } from "./write";
+import { read } from "./read";
 import { diff, DiffResult } from "./diff";
 import { prepare } from "./prepare";
 
@@ -20,17 +20,18 @@ const applyModel = async (model: any) => {
   await client.connect();
   try {
     await prepare(client);
-    const live = await newRead(client, model.application.name);
+    const live = await read(client, model.application.name);
     const diffResult = diff(live, model.model);
     logDiffResult(model, diffResult);
-    if (diffResult.problems.length === 0) {
-      await newWrite(
-        client,
-        model.application.name,
-        model.model,
-        diffResult.operations
-      );
+    if (diffResult.problems.length > 0) {
+      return;
     }
+    await write(
+      client,
+      model.application.name,
+      model.model,
+      diffResult.operations
+    );
   } finally {
     await client.end();
   }
