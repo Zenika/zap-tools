@@ -1,9 +1,9 @@
 import { Client } from "pg";
 
-const MASTER_SCHEMA = "dms";
-const MODEL_TABLE = "models";
-const MODEL_TABLE_SCHEMA_COLUMN = "schema";
-const MODEL_TABLE_MODEL_COLUMN = "model";
+export const MASTER_SCHEMA = "dms";
+export const MODEL_TABLE = "models";
+export const MODEL_TABLE_SCHEMA_COLUMN = "schema";
+export const MODEL_TABLE_MODEL_COLUMN = "model";
 
 export const prepare = async (client: Client): Promise<void> => {
   await client.query("begin");
