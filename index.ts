@@ -3,6 +3,7 @@ import { Client } from "pg";
 import { write as newWrite } from "./write";
 import { read as newRead } from "./read";
 import { diff, DiffResult } from "./diff";
+import { prepare } from "./prepare";
 
 const applyModel = async (model: any) => {
   const liveDatabaseConfig = {
@@ -18,6 +19,7 @@ const applyModel = async (model: any) => {
   const client = new Client(liveDatabaseConfig.connection);
   await client.connect();
   try {
+    await prepare(client);
     const live = await newRead(client, model.application.name);
     const diffResult = diff(live, model.model);
     logDiffResult(model, diffResult);

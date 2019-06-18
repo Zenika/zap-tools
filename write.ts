@@ -37,10 +37,6 @@ export const write = async (
     await client.query(`drop schema if exists "${schema}" cascade`);
   }
   await client.query(`create schema if not exists "${schema}"`);
-  await client.query(`create schema if not exists "dms"`);
-  await client.query(
-    `create table if not exists "dms"."models" ("schema" text not null primary key, "model" json not null)`
-  );
   if (options.drop) {
     await client.query(`delete from "dms"."models" where "schema" = $1`, [
       schema
