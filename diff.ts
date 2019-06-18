@@ -11,32 +11,60 @@ const omit = <T>(obj: T, omittedKey: keyof T): Omit<T, typeof omittedKey> => {
   ) as any;
 };
 
+export type DiffResult = {
+  operations: Operation[];
+  problems: DiffProblem[];
+};
+
+export type DiffProblem = {
+  entityName: string;
+  kind: "table" | "column";
+  problem: "removed" | "modified";
+};
+
 export const diff = (
   source: ModelDefinition,
   target: ModelDefinition
-): Operation[] => {
+): DiffResult => {
   const operations: Operation[] = [];
+  const problems: DiffProblem[] = [];
   for (const [tableName, table] of Object.entries(source.tables)) {
     if (!target.tables[tableName]) {
-      throw new TypeError("table has been removed");
+      problems.push({
+        entityName: tableName,
+        kind: "table",
+        problem: "removed"
+      });
     } else if (
       !isDeepStrictEqual(
         omit(table, "columns"),
         omit(target.tables[tableName], "columns")
       )
     ) {
-      throw new TypeError("table has been modified");
+      problems.push({
+        entityName: tableName,
+        kind: "table",
+        problem: "modified"
+      });
     } else {
       for (const [columnName, column] of Object.entries(table.columns)) {
         if (!target.tables[tableName].columns[columnName]) {
-          throw new TypeError("column has been removed");
+          problems.push({
+            entityName: columnName,
+            kind: "column",
+            problem: "removed"
+          });
         } else if (
           !isDeepStrictEqual(
             column,
             target.tables[tableName].columns[columnName]
           )
         ) {
-          throw new TypeError("column has been modified");
+          problems.push({
+            entityName: columnName,
+            kind: "column",
+            problem: "modified"
+          });
         }
       }
     }
@@ -66,5 +94,8 @@ export const diff = (
       }
     }
   }
-  return operations;
+  return {
+    operations,
+    problems
+  };
 };

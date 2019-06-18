@@ -2,7 +2,7 @@ import { readFileSync } from "fs";
 import { Client } from "pg";
 import { write as newWrite, Operation } from "./write";
 import { read as newRead } from "./read";
-import { diff } from "./diff";
+import { diff, DiffResult } from "./diff";
 
 const applyModel = async (model: any) => {
   const liveDatabaseConfig = {
@@ -19,16 +19,23 @@ const applyModel = async (model: any) => {
   await client.connect();
   try {
     const live = await newRead(client, model.application.name);
-    const operations = diff(live, model.model);
-    log(model, operations);
-    await newWrite(client, model.application.name, model.model, operations);
+    const diffResult = diff(live, model.model);
+    logDiffResult(model, diffResult);
+    if (diffResult.problems.length === 0) {
+      await newWrite(
+        client,
+        model.application.name,
+        model.model,
+        diffResult.operations
+      );
+    }
   } finally {
     await client.end();
   }
 };
 
-const log = (model: any, operations: Operation[]) => {
-  if (operations.length === 0) {
+const logDiffResult = (model: any, { operations, problems }: DiffResult) => {
+  if (operations.length === 0 && problems.length === 0) {
     console.log(model.application.name, "no operations to apply");
   }
   for (const operation of operations) {
@@ -38,6 +45,15 @@ const log = (model: any, operations: Operation[]) => {
       operation.type === "createTable"
         ? operation.name
         : `${operation.table}.${operation.name}`
+    );
+  }
+  for (const problem of problems) {
+    console.error(
+      model.application.name,
+      "problem",
+      problem.kind,
+      problem.entityName,
+      problem.problem
     );
   }
 };
