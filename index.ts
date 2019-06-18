@@ -1,7 +1,7 @@
 import { readFileSync } from "fs";
 import { Client } from "pg";
-import { write as newWrite, CreateTableOperation } from "./write";
-import { read as newRead, makeDiffable } from "./read";
+import { write as newWrite, Operation } from "./write";
+import { read as newRead } from "./read";
 import { diff } from "./diff";
 
 const applyModel = async (model: any) => {
@@ -17,12 +17,17 @@ const applyModel = async (model: any) => {
 
   const client = new Client(liveDatabaseConfig.connection);
   await client.connect();
-  // empty right to ensure dms schema is available
-  // dms schema scaffolding should be done separatly instead
-  await newWrite(client, model.application.name, []);
-  const live = await newRead(client, model.application.name);
-  const target = makeDiffable(model.model.tables);
-  const operations = diff(model.model, live, target);
+  try {
+    const live = await newRead(client, model.application.name);
+    const operations = diff(live, model.model);
+    log(model, operations);
+    await newWrite(client, model.application.name, model.model, operations);
+  } finally {
+    await client.end();
+  }
+};
+
+const log = (model: any, operations: Operation[]) => {
   if (operations.length === 0) {
     console.log(model.application.name, "no operations to apply");
   }
@@ -35,8 +40,6 @@ const applyModel = async (model: any) => {
         : `${operation.table}.${operation.name}`
     );
   }
-  await newWrite(client, model.application.name, operations);
-  await client.end();
 };
 
 const main = async () => {

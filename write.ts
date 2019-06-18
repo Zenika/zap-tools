@@ -3,7 +3,8 @@ import {
   createTable,
   TableDefinition,
   addColumn,
-  ColumnDefinition
+  ColumnDefinition,
+  ModelDefinition
 } from "./sql";
 
 export type CreateTableOperation = {
@@ -24,9 +25,13 @@ export type Operation = CreateTableOperation | AddColumnOperation;
 export const write = async (
   client: Client,
   schema: string,
+  model: ModelDefinition,
   operations: Operation[],
   options: { drop?: boolean } = {}
 ): Promise<void> => {
+  if (operations.length === 0) {
+    return;
+  }
   await client.query("begin");
   if (options.drop) {
     await client.query(`drop schema if exists "${schema}" cascade`);
@@ -34,20 +39,17 @@ export const write = async (
   await client.query(`create schema if not exists "${schema}"`);
   await client.query(`create schema if not exists "dms"`);
   await client.query(
-    `create table if not exists "dms"."table_config" ("schema" text not null, "table" text not null, "config" json not null, primary key ("schema", "table"))`
-  );
-  await client.query(
-    `create table if not exists "dms"."column_config" ("schema" text not null, "table" text not null, "column" text not null, "config" json not null, primary key ("schema", "table", "column"))`
+    `create table if not exists "dms"."models" ("schema" text not null primary key, "model" json not null)`
   );
   if (options.drop) {
-    await client.query(`delete from "dms"."table_config" where "schema" = $1`, [
+    await client.query(`delete from "dms"."models" where "schema" = $1`, [
       schema
     ]);
-    await client.query(
-      `delete from "dms"."column_config" where "schema" = $1`,
-      [schema]
-    );
   }
+  await client.query(
+    `insert into dms.models ("schema", model) values ($1, $2) on conflict ("schema") do update set model = excluded.model`,
+    [schema, model]
+  );
   for (const operation of operations) {
     await applyOperation(client, schema, operation);
   }
@@ -74,31 +76,8 @@ const applyCreateTable = async (
 ): Promise<void> => {
   const sql = createTable(schema, operation.name, operation.table);
   await client.query(sql);
-  await client.query(
-    `insert into "dms"."table_config" ("schema", "table", "config") values ($1, $2, $3)`,
-    [
-      schema,
-      operation.name,
-      JSON.stringify({ constraints: operation.table.constraints })
-    ]
-  );
-  for (const [columnName, column] of Object.entries(operation.table.columns)) {
-    await client.query(
-      `insert into "dms"."column_config" ("schema", "table", "column", "config") values ($1, $2, $3, $4)`,
-      [
-        schema,
-        operation.name,
-        columnName,
-        JSON.stringify({
-          type: column.type,
-          constraints: column.constraints
-        })
-      ]
-    );
-  }
 };
 
-// UNTESTED
 const applyAddColumn = async (
   client: Client,
   schema: string,
@@ -111,16 +90,4 @@ const applyAddColumn = async (
     operation.column
   );
   await client.query(sql);
-  await client.query(
-    `insert into "dms"."column_config" ("schema", "table", "column", "config") values ($1, $2, $3, $4)`,
-    [
-      schema,
-      operation.table,
-      operation.name,
-      JSON.stringify({
-        type: operation.column.type,
-        constraints: operation.column.constraints
-      })
-    ]
-  );
 };

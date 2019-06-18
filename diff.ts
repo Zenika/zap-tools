@@ -1,28 +1,43 @@
 import { Operation } from "./write";
-import { DiffableModel } from "./read";
 import { isDeepStrictEqual } from "util";
+import { ModelDefinition } from "./sql";
+
+const entries = <T>(obj: T): Array<[keyof T, T[keyof T]]> =>
+  Object.entries(obj) as any;
+
+const omit = <T>(obj: T, omittedKey: keyof T): Omit<T, typeof omittedKey> => {
+  return Object.fromEntries(
+    entries(obj).filter(([key]) => key !== omittedKey)
+  ) as any;
+};
 
 export const diff = (
-  model: any,
-  source: DiffableModel,
-  target: DiffableModel
+  source: ModelDefinition,
+  target: ModelDefinition
 ): Operation[] => {
   const operations: Operation[] = [];
-  for (const [name, table] of Object.entries(source.tables)) {
-    if (!target.tables[name]) {
+  for (const [tableName, table] of Object.entries(source.tables)) {
+    if (!target.tables[tableName]) {
       throw new TypeError("table has been removed");
-    } else if (!isDeepStrictEqual(table, target.tables[name])) {
+    } else if (
+      !isDeepStrictEqual(
+        omit(table, "columns"),
+        omit(target.tables[tableName], "columns")
+      )
+    ) {
       throw new TypeError("table has been modified");
-    }
-  }
-  for (const [tableName, columns] of Object.entries(source.columns)) {
-    for (const [columnName, column] of Object.entries(columns)) {
-      if (!target.columns[tableName] || !target.columns[tableName][columnName]) {
-        throw new TypeError("column has been removed");
-      } else if (
-        !isDeepStrictEqual(column, target.columns[tableName][columnName])
-      ) {
-        throw new TypeError("column has been modified");
+    } else {
+      for (const [columnName, column] of Object.entries(table.columns)) {
+        if (!target.tables[tableName].columns[columnName]) {
+          throw new TypeError("column has been removed");
+        } else if (
+          !isDeepStrictEqual(
+            column,
+            target.tables[tableName].columns[columnName]
+          )
+        ) {
+          throw new TypeError("column has been modified");
+        }
       }
     }
   }
@@ -31,14 +46,13 @@ export const diff = (
       operations.push({
         type: "createTable",
         name: tableName,
-        table: {
-          columns: model.tables[tableName].columns,
-          constraints: table.constraints
-        }
+        table
       });
     } else {
-      for (const [columnName, column] of Object.entries(target.columns[tableName])) {
-        if (!source.columns[tableName][columnName]) {
+      for (const [columnName, column] of Object.entries(
+        target.tables[tableName].columns
+      )) {
+        if (!source.tables[tableName].columns[columnName]) {
           operations.push({
             type: "addColumn",
             name: columnName,

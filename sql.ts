@@ -1,3 +1,7 @@
+export type ModelDefinition = {
+  tables: { [tableName: string]: TableDefinition };
+};
+
 export type TableDefinition = {
   columns: { [name: string]: ColumnDefinition };
   constraints?: TableConstraintDefinition[];
