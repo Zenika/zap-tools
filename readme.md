@@ -10,16 +10,13 @@ Proof-of-concept for applying JSON-defined data models to an existing Postgres d
 
 ## Limitations
 
-The code makes heavy use of `graphql-migrate`, which is not very mature and has the following issues:
-- defining auto-incrementing columns is done through the type `increments` instead of a more postgres-y way, because of the way graphql-migrate leans on the underlying knex module
-- making a column auto-incrementing throws off the diff algorithm because postgres automatically assigns a default value (of the form `next_val(...)`), but the input column definition does not have a default value
-- there is an inconsistency between reading and writing column definitions to postgres in regards to the default value:
-  - if an input column definition has the default to `null`, then the generated SQL has `DEFAULT NULL` even if the column is non nullable
-  - columns with no default value are read with a default value set to `null`
+- only possible migrations are creating tables and columns
+- deployed model definition is store in db itself, and then used as reference for subsequent diffs, so if there is a bug in the deployment of a model the stored model definition could become out of sync with the actual deployed model
 
 ## Going further
 
-- Remove graphql-migrate? The reader, writer, and diff algorithm would need to be replaced.
-  - The diff algorihm could be a lot simpler because I think we only would allow new tables and new columns. All other modifications would throw an error.
-  - The writer is probably simple and could be inspired from the code from Hasura's console (see [here](https://github.com/hasura/graphql-engine/blob/master/console/src/components/Services/Data/Add/AddActions.js#L93))
-  - The reader? Maybe OK using postgres built-in `information_schema`
+- find a way to extract a model from postgres introspection facilities? (to fix limitiation 2)
+- migrate to `pg-promise` for more robust query formatting and nicer transaction syntax
+- allow for making a column nullable
+- make columns not null by default? makes sense because going from non nullable to nullable is possible but not the reverse
+- second model definition "syntax" with slightly higher level of abstraction? (not null by default, id type, reference by model name, auto createdAt/updatedAt)
