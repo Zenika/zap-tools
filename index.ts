@@ -1,6 +1,6 @@
 import { readFileSync } from "fs";
 import { Client } from "pg";
-import { write as newWrite, Operation } from "./write";
+import { write as newWrite } from "./write";
 import { read as newRead } from "./read";
 import { diff, DiffResult } from "./diff";
 
