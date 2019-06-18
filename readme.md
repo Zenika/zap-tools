@@ -20,3 +20,4 @@ Proof-of-concept for applying JSON-defined data models to an existing Postgres d
 - allow for making a column nullable
 - make columns not null by default? makes sense because going from non nullable to nullable is possible but not the reverse
 - second model definition "syntax" with slightly higher level of abstraction? (not null by default, id type, reference by model name, auto createdAt/updatedAt)
+- write json schema for JSON model definition and derive TypeScript types from it
