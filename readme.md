@@ -15,9 +15,9 @@ Proof-of-concept for applying JSON-defined data models to an existing Postgres d
 
 ## Going further
 
-- find a way to extract a model from postgres introspection facilities? (to fix limitiation 2)
+- allow for migrating a column from non nullable to nullable
 - migrate to `pg-promise` for more robust query formatting and nicer transaction syntax
-- allow for making a column nullable
 - make columns not null by default? makes sense because going from non nullable to nullable is possible but not the reverse
 - second model definition "syntax" with slightly higher level of abstraction? (not null by default, id type, reference by model name, auto createdAt/updatedAt)
 - write json schema for JSON model definition and derive TypeScript types from it
+- find a way to extract a model from postgres introspection facilities? (to fix limitiation 2)
