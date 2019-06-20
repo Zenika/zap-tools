@@ -11,7 +11,9 @@ Proof-of-concept for applying JSON-defined data models to an existing Postgres d
 ## Limitations
 
 - only possible migrations are creating tables and columns
-- deployed model definition is store in db itself, and then used as reference for subsequent diffs, so if there is a bug in the deployment of a model the stored model definition could become out of sync with the actual deployed model
+- deployed model definition is store in db itself, and then used as reference for subsequent diffs
+  - if there is a bug in the deployment of a model the stored model definition could become out of sync with the actual deployed model
+  - a model expressed as different json but having same db semantics is interpreted as different
 
 ## Going further
 
