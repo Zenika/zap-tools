@@ -4,12 +4,26 @@ services:
     image: postgres:11
     ports:
       - "5433:5432"
+    networks:
+      - netnet
   hasura:
     image: hasura/graphql-engine:v1.0.0-beta.2
     ports:
       - "8080:8080"
     depends_on:
       - "postgres"
+    networks:
+      - netnet
     environment:
       HASURA_GRAPHQL_DATABASE_URL: postgres://postgres:@postgres:5432/postgres
       HASURA_GRAPHQL_ENABLE_CONSOLE: "true"
+  humeur-respond:
+    build: ./remote-schema-poc-1
+    depends_on:
+      - hasura
+    networks:
+      - netnet
+
+networks:
+  netnet:
+    driver: bridge
