@@ -9,11 +9,11 @@
           "id": {
             "type": "integer",
             "constraints": {
-              "primaryKey": true
+              "generated": "always"
             }
           },
-          "value": {
-            "type": "integer",
+          "survey": {
+            "type": "text",
             "constraints": {
               "notNull": true
             }
@@ -27,6 +27,12 @@
                 "table": "users",
                 "column": "id"
               }
+            }
+          },
+          "value": {
+            "type": "integer",
+            "constraints": {
+              "notNull": true
             }
           }
         }
