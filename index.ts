@@ -5,7 +5,7 @@ import { read } from "./read";
 import { diff, DiffResult } from "./diff";
 import { prepare } from "./prepare";
 
-const applyModel = async (model: any) => {
+const applyModel = async (model: any, options: { drop?: boolean } = {}) => {
   const liveDatabaseConfig = {
     client: "pg",
     connection: {
@@ -30,7 +30,8 @@ const applyModel = async (model: any) => {
       client,
       model.application.name,
       model.model,
-      diffResult.operations
+      diffResult.operations,
+      { drop: options.drop }
     );
   } finally {
     await client.end();
@@ -62,10 +63,10 @@ const logDiffResult = (model: any, { operations, problems }: DiffResult) => {
 };
 
 const main = async () => {
-  for (const file of ["./app-alibeez.json", "./app-humeur.json"]) {
-    const model = JSON.parse(readFileSync(file).toString());
-    await applyModel(model);
-  }
+  const modelFile = process.argv[process.argv.length - 1];
+  const drop = process.argv.includes("--drop");
+  const model = JSON.parse(readFileSync(modelFile).toString());
+  await applyModel(model, { drop });
 };
 
 main();
