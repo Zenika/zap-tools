@@ -35,7 +35,29 @@
               "notNull": true
             }
           }
-        }
+        },
+        "insert_permissions": [
+          {
+            "role": "employee",
+            "comment": null,
+            "permission": {
+              "set": {},
+              "check": { "id": { "_eq": "X-Hasura-User-Id" } },
+              "columns": ["survey", "user_id", "value"]
+            }
+          }
+        ],
+        "select_permissions": [
+          {
+            "role": "employee",
+            "comment": null,
+            "permission": {
+              "allow_aggregations": false,
+              "columns": ["survey", "value"],
+              "filter": { "id": { "_eq": "X-Hasura-User-Id" } }
+            }
+          }
+        ]
       }
     }
   }
