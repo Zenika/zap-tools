@@ -4,7 +4,12 @@ import { write } from "./write";
 import { read } from "./read";
 import { diff, DiffResult } from "./diff";
 import { prepare } from "./prepare";
-import { getMetadatas, isMetadatas } from "./metadatas";
+import {
+  getMetadata,
+  isMetadata,
+  computeMetadata,
+  replaceMetadata
+} from "./metadata";
 
 const applyModel = async (model: any, options: { drop?: boolean } = {}) => {
   const liveDatabaseConfig = {
@@ -63,11 +68,16 @@ const logDiffResult = (model: any, { operations, problems }: DiffResult) => {
   }
 };
 
-const setMetadatas = async (model: { [key: string]: any }, url: string) => {
-  const metadatas = await getMetadatas(url);
-  if (!isMetadatas(metadatas)) {
-    console.error("There was in error checking the type of metadatas");
+const setMetadata = async (model: { [key: string]: any }, url: string) => {
+  const metadata = await getMetadata(url);
+  if (!isMetadata(metadata)) {
+    console.error("There was in error checking the type of metadata");
     return;
+  }
+  try {
+    await replaceMetadata(url, computeMetadata(metadata, model));
+  } catch (err) {
+    console.error("Error trying to replace metadata", err);
   }
 };
 
@@ -77,7 +87,7 @@ const main = async () => {
   const drop = process.argv.includes("--drop");
   const model = JSON.parse(readFileSync(modelFile).toString());
   await applyModel(model, { drop });
-  await setMetadatas(model, url);
+  await setMetadata(model, url);
 };
 
 main();
