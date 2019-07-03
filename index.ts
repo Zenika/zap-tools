@@ -4,6 +4,7 @@ import { write } from "./write";
 import { read } from "./read";
 import { diff, DiffResult } from "./diff";
 import { prepare } from "./prepare";
+import { ModelDefinition } from "./sql";
 
 const applyModel = async (model: any, options: { drop?: boolean } = {}) => {
   const liveDatabaseConfig = {
@@ -20,7 +21,9 @@ const applyModel = async (model: any, options: { drop?: boolean } = {}) => {
   await client.connect();
   try {
     await prepare(client);
-    const live = await read(client, model.application.name);
+    const live: ModelDefinition = options.drop
+      ? { tables: {} }
+      : await read(client, model.application.name);
     const diffResult = diff(live, model.model);
     logDiffResult(model, diffResult);
     if (diffResult.problems.length > 0) {
