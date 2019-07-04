@@ -64,7 +64,7 @@ export const computeMetadata = (metadata: Metadata, model: any): Metadata => {
 };
 
 export const replaceMetadata = async (url: string, newMetadata: Metadata) => {
-  const reponse = await fetch(`${url}/v1/query`, {
+  const response = await fetch(`${url}/v1/query`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -75,10 +75,14 @@ export const replaceMetadata = async (url: string, newMetadata: Metadata) => {
       args: newMetadata
     })
   });
-  if (!reponse.ok) {
-    throw new Error(`${reponse.status} -> ${reponse.statusText}`);
+  if (!response.ok) {
+    throw new Error(
+      `${response.status} -> ${response.statusText} : ${JSON.stringify(
+        await response.json()
+      )}`
+    );
   }
-  return await reponse.json();
+  return await response.json();
 };
 
 export const isMetadata = (metadata: any): metadata is Metadata =>
