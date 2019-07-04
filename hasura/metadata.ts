@@ -1,16 +1,16 @@
 import fetch from "node-fetch";
 import { isArray } from "util";
 
-export type Metadata = {
+export type HasuraMetadata = {
   functions: any[]; // anys for now
   remote_schema: any[];
   query_collections: any[];
   allowlist: any[];
-  tables: Table[];
+  tables: HasuraMetadataTable[];
   query_template: any[];
 };
 
-export type Table = {
+export type HasuraMetadataTable = {
   table: { schema: string; name: string };
   object_relationships: any[];
   array_relationships: any[];
@@ -43,7 +43,7 @@ export const getMetadata = async (url: string) => {
   return await reponse.json();
 };
 
-export const computeMetadata = (metadata: Metadata, model: any): Metadata => {
+export const mergePermissionsFromModel = (metadata: HasuraMetadata, model: any): HasuraMetadata => {
   return {
     ...metadata,
     tables: metadata.tables.map(table => {
@@ -63,7 +63,7 @@ export const computeMetadata = (metadata: Metadata, model: any): Metadata => {
   };
 };
 
-export const replaceMetadata = async (url: string, newMetadata: Metadata) => {
+export const replaceMetadata = async (url: string, newMetadata: HasuraMetadata) => {
   const response = await fetch(`${url}/v1/query`, {
     method: "POST",
     headers: {
@@ -85,12 +85,12 @@ export const replaceMetadata = async (url: string, newMetadata: Metadata) => {
   return await response.json();
 };
 
-export const isMetadata = (metadata: any): metadata is Metadata =>
+export const isMetadata = (metadata: any): metadata is HasuraMetadata =>
   metadata &&
   isArray(metadata.tables) &&
   metadata.tables.every((table: any) => isTable(table));
 
-export const isTable = (table: any): table is Table =>
+const isTable = (table: any): table is HasuraMetadataTable =>
   table &&
   table.table &&
   table.table.schema &&
