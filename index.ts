@@ -10,7 +10,7 @@ const applyModel = async (model: any, options: { drop?: boolean } = {}) => {
   const liveDatabaseConfig = {
     client: "pg",
     connection: {
-      host: "192.168.99.100",
+      host: "localhost",
       port: 5433,
       user: "postgres",
       database: "postgres"
