@@ -25,12 +25,12 @@ export type Table = {
   }[];
 };
 
-export const getMetadata = async (url: string) => {
+export const getMetadata = async (url: string, adminSecret: string) => {
   const reponse = await fetch(`${url}/v1/query`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
-      "X-Hasura-Role": "admin"
+      "x-hasura-admin-secret": adminSecret
     },
     body: JSON.stringify({
       type: "export_metadata",
@@ -63,12 +63,16 @@ export const computeMetadata = (metadata: Metadata, model: any): Metadata => {
   };
 };
 
-export const replaceMetadata = async (url: string, newMetadata: Metadata) => {
+export const replaceMetadata = async (
+  url: string,
+  newMetadata: Metadata,
+  adminSecret: string
+) => {
   const response = await fetch(`${url}/v1/query`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
-      "X-Hasura-Role": "admin"
+      "x-hasura-admin-secret": adminSecret
     },
     body: JSON.stringify({
       type: "replace_metadata",
