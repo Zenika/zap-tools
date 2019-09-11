@@ -13,7 +13,6 @@ const updateHasuraMetadata = async (
   adminKey: string
 ) => {
   const metadata = await getMetadata(url, adminKey);
-  console.log(JSON.stringify(metadata));
   if (!isMetadata(metadata)) {
     throw new TypeError(
       "metadata retrieved from Hasura does not conform to expected type"
