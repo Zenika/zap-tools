@@ -71,26 +71,32 @@ const logDiffResult = (model: any, { operations, problems }: DiffResult) => {
   }
 };
 
-const setMetadata = async (model: { [key: string]: any }, url: string) => {
-  const metadata = await getMetadata(url);
+const setMetadata = async (
+  model: { [key: string]: any },
+  url: string,
+  adminSecret: string
+) => {
+  const metadata = await getMetadata(url, adminSecret);
   if (!isMetadata(metadata)) {
     console.error("There was in error checking the type of metadata");
     return;
   }
   try {
-    await replaceMetadata(url, computeMetadata(metadata, model));
+    await replaceMetadata(url, computeMetadata(metadata, model), adminSecret);
+    console.log("Metadata replaced");
   } catch (err) {
     console.error("Error trying to replace metadata", err);
   }
 };
 
 const main = async () => {
-  const modelFile = process.argv[process.argv.length - 2];
-  const url = process.argv[process.argv.length - 1];
+  const modelFile = process.argv[process.argv.length - 3];
+  const url = process.argv[process.argv.length - 2];
+  const adminSecret = process.argv[process.argv.length - 1];
   const drop = process.argv.includes("--drop");
   const model = JSON.parse(readFileSync(modelFile).toString());
   await applyModel(model, { drop });
-  await setMetadata(model, url);
+  await setMetadata(model, url, adminSecret);
 };
 
 main();
