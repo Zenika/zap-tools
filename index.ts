@@ -10,10 +10,11 @@ const applyModel = async (model: any, options: { drop?: boolean } = {}) => {
   const liveDatabaseConfig = {
     client: "pg",
     connection: {
-      host: "localhost",
-      port: 5433,
-      user: "postgres",
-      database: "postgres"
+      host: process.env.PGHOST || "",
+      port: Number(process.env.PGPORT) || 5432,
+      user: process.env.PGUSER || "",
+      password: process.env.PASSWORD || "",
+      database: process.env.PGDATABASE || ""
     }
   };
 
@@ -66,7 +67,7 @@ const logDiffResult = (model: any, { operations, problems }: DiffResult) => {
 };
 
 const main = async () => {
-  const modelFile = process.argv[process.argv.length - 1];
+  const modelFile = process.argv[process.argv.length - 3];
   const drop = process.argv.includes("--drop");
   const model = JSON.parse(readFileSync(modelFile).toString());
   await applyModel(model, { drop });

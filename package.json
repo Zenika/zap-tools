@@ -4,12 +4,14 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "start": "ts-node index.ts"
+    "start": "ts-node -r dotenv/config index.ts",
+    "start:hasura": "ts-node -r dotenv/config ./hasura/hasura.ts"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "devDependencies": {
+    "@types/dotenv": "^6.1.1",
     "@types/node": "^12.0.8",
     "@types/node-fetch": "^2.3.7",
     "@types/pg": "^7.4.14",
@@ -19,6 +21,7 @@
     "typescript": "^3.5.2"
   },
   "dependencies": {
+    "dotenv": "^8.1.0",
     "node-fetch": "^2.6.0",
     "pg": "^7.11.0"
   }

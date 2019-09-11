@@ -25,12 +25,12 @@ export type HasuraMetadataTable = {
   }[];
 };
 
-export const getMetadata = async (url: string) => {
+export const getMetadata = async (url: string, adminKey: string) => {
   const reponse = await fetch(`${url}/v1/query`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
-      "X-Hasura-Role": "admin"
+      "x-hasura-admin-secret": adminKey
     },
     body: JSON.stringify({
       type: "export_metadata",
@@ -43,7 +43,10 @@ export const getMetadata = async (url: string) => {
   return await reponse.json();
 };
 
-export const mergePermissionsFromModel = (metadata: HasuraMetadata, model: any): HasuraMetadata => {
+export const mergePermissionsFromModel = (
+  metadata: HasuraMetadata,
+  model: any
+): HasuraMetadata => {
   return {
     ...metadata,
     tables: metadata.tables.map(table => {
@@ -63,12 +66,16 @@ export const mergePermissionsFromModel = (metadata: HasuraMetadata, model: any):
   };
 };
 
-export const replaceMetadata = async (url: string, newMetadata: HasuraMetadata) => {
+export const replaceMetadata = async (
+  url: string,
+  newMetadata: HasuraMetadata,
+  adminKey: string
+) => {
   const response = await fetch(`${url}/v1/query`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
-      "X-Hasura-Role": "admin"
+      "x-hasura-admin-secret": adminKey
     },
     body: JSON.stringify({
       type: "replace_metadata",
