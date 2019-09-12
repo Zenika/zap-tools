@@ -67,7 +67,7 @@ const logDiffResult = (model: any, { operations, problems }: DiffResult) => {
 };
 
 const main = async () => {
-  const modelFile = process.argv[process.argv.length - 3];
+  const modelFile = process.argv[process.argv.length - 1];
   const drop = process.argv.includes("--drop");
   const model = JSON.parse(readFileSync(modelFile).toString());
   await applyModel(model, { drop });

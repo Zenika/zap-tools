@@ -18,10 +18,10 @@
     "@types/tape": "^4.2.33",
     "tape": "^4.10.2",
     "ts-node": "^8.3.0",
-    "typescript": "^3.5.2"
+    "typescript": "^3.5.2",
+    "dotenv": "^8.1.0"
   },
   "dependencies": {
-    "dotenv": "^8.1.0",
     "node-fetch": "^2.6.0",
     "pg": "^7.11.0"
   }
