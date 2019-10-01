@@ -1,5 +1,6 @@
 import fetch from "node-fetch";
 import { isArray } from "util";
+import { SubCommandArguments } from "..";
 
 export type HasuraMetadata = {
   functions: any[]; // anys for now
@@ -23,6 +24,28 @@ export type HasuraMetadataTable = {
       filter: { id: { _eq?: string } }; // need to type this more precisely
     };
   }[];
+};
+
+export const updateHasuraMetadata = async (
+  args: SubCommandArguments
+) => {
+  const metadata = await getMetadata(args.url, args.adminKey);
+  if (!isMetadata(metadata)) {
+    throw new TypeError(
+      "metadata retrieved from Hasura does not conform to expected type"
+    );
+  }
+  try {
+    console.log(
+      await replaceMetadata(
+        args.url,
+        mergePermissionsFromModel(metadata, args.model),
+        args.adminKey
+      )
+    );
+  } catch (err) {
+    console.error("Error trying to replace metadata", err);
+  }
 };
 
 export const getMetadata = async (url: string, adminKey: string) => {
