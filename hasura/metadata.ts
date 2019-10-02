@@ -1,5 +1,6 @@
 import fetch from "node-fetch";
 import { isArray } from "util";
+import { readFileSync } from "fs";
 
 export type HasuraMetadata = {
   functions: any[]; // anys for now
@@ -25,7 +26,31 @@ export type HasuraMetadataTable = {
   }[];
 };
 
-export const getMetadata = async (url: string, adminKey: string) => {
+export const updateMetadata = async (
+  modelPath: string,
+  url: string,
+  adminKey: string
+) => {
+  const model = JSON.parse(readFileSync(modelPath).toString());
+  const metadata = await getMetadata(url, adminKey);
+  if (!isMetadata(metadata)) {
+    throw new TypeError(
+      "metadata retrieved from Hasura does not conform to expected type"
+    );
+  }
+  try {
+      await replaceMetadata(
+        url,
+        mergePermissionsFromModel(metadata, model),
+        adminKey
+      )
+    console.log("Metadatas updated sucessfuly");
+  } catch (err) {
+    throw new Error(`Error trying to replace metadata: ${err}`);
+  }
+};
+
+const getMetadata = async (url: string, adminKey: string) => {
   const reponse = await fetch(`${url}/v1/query`, {
     method: "POST",
     headers: {
@@ -43,7 +68,7 @@ export const getMetadata = async (url: string, adminKey: string) => {
   return await reponse.json();
 };
 
-export const mergePermissionsFromModel = (
+const mergePermissionsFromModel = (
   metadata: HasuraMetadata,
   model: any
 ): HasuraMetadata => {
@@ -66,7 +91,7 @@ export const mergePermissionsFromModel = (
   };
 };
 
-export const replaceMetadata = async (
+const replaceMetadata = async (
   url: string,
   newMetadata: HasuraMetadata,
   adminKey: string
@@ -89,7 +114,6 @@ export const replaceMetadata = async (
       )}`
     );
   }
-  return await response.json();
 };
 
 export const isMetadata = (metadata: any): metadata is HasuraMetadata =>

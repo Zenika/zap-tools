@@ -1,76 +1,66 @@
-import { readFileSync } from "fs";
-import { Client } from "pg";
-import { write } from "./write";
-import { read } from "./read";
-import { diff, DiffResult } from "./diff";
-import { prepare } from "./prepare";
-import { ModelDefinition } from "./sql";
-
-const applyModel = async (model: any, options: { drop?: boolean } = {}) => {
-  const liveDatabaseConfig = {
-    client: "pg",
-    connection: {
-      host: process.env.PGHOST || "",
-      port: Number(process.env.PGPORT) || 5432,
-      user: process.env.PGUSER || "",
-      password: process.env.PASSWORD || "",
-      database: process.env.PGDATABASE || ""
-    }
-  };
-
-  const client = new Client(liveDatabaseConfig.connection);
-  await client.connect();
-  try {
-    await prepare(client);
-    const live: ModelDefinition = options.drop
-      ? { tables: {} }
-      : await read(client, model.application.name);
-    const diffResult = diff(live, model.model);
-    logDiffResult(model, diffResult);
-    if (diffResult.problems.length > 0) {
-      return;
-    }
-    await write(
-      client,
-      model.application.name,
-      model.model,
-      diffResult.operations,
-      { drop: options.drop }
-    );
-  } finally {
-    await client.end();
-  }
-};
-
-const logDiffResult = (model: any, { operations, problems }: DiffResult) => {
-  if (operations.length === 0 && problems.length === 0) {
-    console.log(model.application.name, "no operations to apply");
-  }
-  for (const operation of operations) {
-    console.log(
-      model.application.name,
-      operation.type,
-      operation.type === "createTable"
-        ? operation.name
-        : `${operation.table}.${operation.name}`
-    );
-  }
-  for (const problem of problems) {
-    console.error(
-      model.application.name,
-      "problem",
-      problem.kind,
-      problem.entityName,
-      problem.problem
-    );
-  }
-};
+import program from "commander";
+import { applyModel } from "./model/model";
+import { trackTables } from "./hasura/track";
+import {
+  assertModelArgument,
+  assertUrlArgument,
+  assertKeyArgument
+} from "./argument-checking";
+import { updateMetadata } from "./hasura/metadata";
 
 const main = async () => {
-  const modelFile = process.argv[process.argv.length - 1];
-  const drop = process.argv.includes("--drop");
-  const model = JSON.parse(readFileSync(modelFile).toString());
-  await applyModel(model, { drop });
+  program
+    .option(
+      "--apply-model",
+      "Apply model of the json file passed as argument in the -m command"
+    )
+    .option(
+      "--drop",
+      "Specify wether to drop the database before applying the model"
+    )
+    .option("--track-tables", "Track tables from the model json file")
+    .option(
+      "--update-metadatas",
+      "Updates metadatas of the Zap server with permissions defined in the model json file"
+    )
+    .option("-m, --model <path>", "Path to the model json file")
+    .option("-u, --url <url>", "URL of the Zap server")
+    .option(
+      "-k, --admin-key <key>",
+      "Admin key used to update the Zap server"
+    );
+  try {
+    program.parse(process.argv);
+    if (program.applyModel) {
+      if (!assertModelArgument(program)) {
+        return;
+      }
+      await applyModel(program.model, { drop: program.drop });
+    }
+    if (program.updateMetadatas) {
+      if (
+        !assertModelArgument(program) ||
+        !assertUrlArgument(program) ||
+        !assertKeyArgument(program)
+      ) {
+        return;
+      }
+      await updateMetadata(program.model, program.url, program.adminKey);
+    }
+    if (program.trackTables) {
+      if (
+        !assertModelArgument(program) ||
+        !assertUrlArgument(program) ||
+        !assertKeyArgument(program)
+      ) {
+        return;
+      }
+      await trackTables(program.model, program.url, program.adminKey);
+    }
+    console.log("All done")
+  } catch (err) {
+    console.error(err);
+  }
 };
 
 main();

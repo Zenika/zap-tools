@@ -4,8 +4,7 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "start": "ts-node -r dotenv/config index.ts",
-    "start:hasura": "ts-node -r dotenv/config ./hasura/hasura.ts"
+    "start": "ts-node -r dotenv/config index.ts"
   },
   "keywords": [],
   "author": "",
@@ -22,6 +21,7 @@
     "dotenv": "^8.1.0"
   },
   "dependencies": {
+    "commander": "^3.0.2",
     "node-fetch": "^2.6.0",
     "pg": "^7.11.0"
   }
