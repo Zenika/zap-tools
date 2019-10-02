@@ -6,7 +6,11 @@ import { diff, DiffResult } from "./diff";
 import { prepare } from "./prepare";
 import { ModelDefinition } from "./sql";
 
-const applyModel = async (model: any, options: { drop?: boolean } = {}) => {
+export const applyModel = async (
+  modelPath: string,
+  options: { drop?: boolean } = {}
+) => {
+  const model = JSON.parse(readFileSync(modelPath).toString());
   const liveDatabaseConfig = {
     client: "pg",
     connection: {
@@ -17,10 +21,9 @@ const applyModel = async (model: any, options: { drop?: boolean } = {}) => {
       database: process.env.PGDATABASE || ""
     }
   };
-
   const client = new Client(liveDatabaseConfig.connection);
-  await client.connect();
   try {
+    await client.connect();
     await prepare(client);
     const live: ModelDefinition = options.drop
       ? { tables: {} }
@@ -37,8 +40,10 @@ const applyModel = async (model: any, options: { drop?: boolean } = {}) => {
       diffResult.operations,
       { drop: options.drop }
     );
-  } finally {
     await client.end();
+    console.log("Model successfuly applied");
+  } catch (err) {
+    throw new Error(`Error trying to apply model ${err}`);
   }
 };
 
@@ -65,10 +70,3 @@ const logDiffResult = (model: any, { operations, problems }: DiffResult) => {
     );
   }
 };
-
-export const handleModelCommand = async () => {
-  const modelFile = process.argv[process.argv.length - 1];
-  const drop = process.argv.includes("--drop");
-  const model = JSON.parse(readFileSync(modelFile).toString());
-  await applyModel(model, { drop });
-}
